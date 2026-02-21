@@ -18,8 +18,8 @@
             font-weight: bold; cursor: pointer; border-radius: 5px; font-family: 'Arial';
         }
         button.stop { background: #ff3333; color: white; }
-        .speed-control { display: flex; align-items: center; gap: 10px; color: white; font-weight: bold; }
-        input[type=range] { cursor: pointer; width: 150px; }
+        .slider-label { color: white; font-weight: bold; min-width: 80px; }
+        input[type=range] { cursor: pointer; width: 120px; }
         #planet-selector { display: flex; gap: 5px; flex-wrap: wrap; margin-right: auto; }
         .p-btn {
             background: #222; color: #ccc; border: 1px solid #444;
@@ -30,6 +30,7 @@
         .label { position: absolute; transform: translate(-50%, -50%); text-shadow: 2px 2px 5px #000; font-weight: bold; color: white; white-space: nowrap; }
         .m-point-label { font-size: 12px; color: #888; }
         .planet-label { font-size: 14px; color: #fff; }
+        .axis-label { font-size: 18px; font-weight: 900; }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -40,10 +41,15 @@
     <div class="control-group">
         <button id="toggleBtn">بدء المحاكاة</button>
     </div>
-    <div class="control-group speed-control">
-        <span>السرعة:</span>
+    <div class="control-group">
+        <span class="slider-label">السرعة:</span>
         <input type="range" id="speedSlider" min="0.1" max="5" step="0.1" value="1">
-        <span id="speedVal">1x</span>
+        <span id="speedVal" style="color: #00ff88;">1x</span>
+    </div>
+    <div class="control-group">
+        <span class="slider-label">حجم الكواكب:</span>
+        <input type="range" id="sizeSlider" min="0.5" max="10" step="0.1" value="1">
+        <span id="sizeVal" style="color: #00ff88;">1x</span>
     </div>
     <div id="planet-selector"></div>
 </div>
@@ -54,14 +60,16 @@
     let scene, camera, renderer, controls;
     let isRotating = false;
     let globalSpeedMultiplier = 1;
+    let globalSizeMultiplier = 1;
     const planets = [];
     const earthPoints = [];
+    const axisLabels = [];
     const labelsContainer = document.getElementById('labels-container');
 
     const planetData = [
         { name: "عطارد", dist: 120, size: 4, speed: 0.040, color: 0xAAAAAA },
         { name: "الزهرة", dist: 180, size: 9, speed: 0.030, color: 0xE3BB76 },
-        { name: "الأرض", dist: 260, size: 10, speed: 0.025, color: 0x2271B3, isFocus: true },
+        { name: "الأرض", dist: 260, size: 10, speed: 0.025, color: 0x00aaff, isFocus: true }, // Bright Neon Blue
         { name: "المريخ", dist: 340, size: 7, speed: 0.020, color: 0xE27B58 },
         { name: "المشتري", dist: 500, size: 24, speed: 0.012, color: 0xD39C7E },
         { name: "زحل", dist: 680, size: 20, speed: 0.009, color: 0xC5AB6E, hasRings: true },
@@ -74,56 +82,103 @@
 
     function init() {
         scene = new THREE.Scene();
-        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 20000);
-        camera.position.set(0, 1000, 1500);
+        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 30000);
+        camera.position.set(0, 1000, 2000);
 
         renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.toneMapping = THREE.ReinhardToneMapping;
         document.body.appendChild(renderer.domElement);
 
         controls = new THREE.OrbitControls(camera, renderer.domElement);
         controls.enableDamping = true;
 
-        // نجوم
+        // Stars
         const starsGeo = new THREE.BufferGeometry();
         const starsPos = [];
         for(let i=0; i<8000; i++) {
-            starsPos.push((Math.random()-0.5)*15000, (Math.random()-0.5)*15000, (Math.random()-0.5)*15000);
+            starsPos.push((Math.random()-0.5)*20000, (Math.random()-0.5)*20000, (Math.random()-0.5)*20000);
         }
         starsGeo.setAttribute('position', new THREE.Float32BufferAttribute(starsPos, 3));
-        scene.add(new THREE.Points(starsGeo, new THREE.PointsMaterial({ color: 0xFFFFFF, size: 1.1 })));
+        scene.add(new THREE.Points(starsGeo, new THREE.PointsMaterial({ color: 0xFFFFFF, size: 1.5 })));
 
-        // الشمس
-        scene.add(new THREE.Mesh(new THREE.SphereGeometry(55, 32, 32), new THREE.MeshBasicMaterial({color: 0xFFDD44})));
-        const sunLight = new THREE.PointLight(0xFFFFFF, 2, 4000);
+        // Sun
+        const sunGeo = new THREE.SphereGeometry(60, 64, 64);
+        const sunMat = new THREE.MeshPhongMaterial({
+            color: 0xffff33,       // Neon Yellow
+            emissive: 0xffff77,
+            emissiveIntensity: 2,
+            shininess: 50
+        });
+        const sun = new THREE.Mesh(sunGeo, sunMat);
+        scene.add(sun);
+
+        // Neon Halo around Sun
+        const spriteMap = new THREE.TextureLoader().load('https://threejs.org/examples/textures/sprites/spark1.png');
+        const spriteMaterial = new THREE.SpriteMaterial({
+            map: spriteMap,
+            color: 0xffff33,
+            transparent: true,
+            opacity: 0.6,
+            blending: THREE.AdditiveBlending
+        });
+        const sunGlow = new THREE.Sprite(spriteMaterial);
+        sunGlow.scale.set(200, 200, 1);
+        sun.add(sunGlow);
+
+        // Sun Light
+        const sunLight = new THREE.PointLight(0xffff33, 6, 3000);
         scene.add(sunLight);
-        scene.add(new THREE.AmbientLight(0x444444));
+        scene.add(new THREE.AmbientLight(0x333333));
+
+        // Axis helper
+        const axisLength = 300;
+        const axesHelper = new THREE.AxesHelper(axisLength);
+        scene.add(axesHelper);
+
+        const axes = [
+            { label: 'X', pos: new THREE.Vector3(axisLength + 20, 0, 0), color: '#ff3333' },
+            { label: 'Y', pos: new THREE.Vector3(0, axisLength + 20, 0), color: '#33ff33' },
+            { label: 'Z', pos: new THREE.Vector3(0, 0, axisLength + 20), color: '#3333ff' }
+        ];
+
+        axes.forEach(axis => {
+            const el = document.createElement('div');
+            el.className = 'label axis-label';
+            el.innerText = axis.label;
+            el.style.color = axis.color;
+            labelsContainer.appendChild(el);
+            axisLabels.push({ el, pos: axis.pos });
+        });
 
         const selector = document.getElementById('planet-selector');
         planetData.forEach(data => {
-            // المدار
             const orbitCurve = new THREE.EllipseCurve(0, 0, data.dist, data.dist);
             const orbitGeo = new THREE.BufferGeometry().setFromPoints(orbitCurve.getPoints(200));
-            const orbit = new THREE.Line(orbitGeo, new THREE.LineBasicMaterial({color: 0x333333}));
+            const orbit = new THREE.Line(orbitGeo, new THREE.LineBasicMaterial({color: 0x444444}));
             orbit.rotation.x = Math.PI/2;
             scene.add(orbit);
 
-            // الكوكب
-            const mesh = new THREE.Mesh(new THREE.SphereGeometry(data.size, 32, 32), new THREE.MeshPhongMaterial({color: data.color}));
+            const mesh = new THREE.Mesh(new THREE.SphereGeometry(data.size, 32, 32), new THREE.MeshPhongMaterial({
+                color: data.color,
+                shininess: 100,
+                specular: 0x222222
+            }));
             scene.add(mesh);
 
             if (data.hasRings) {
-                const ring = new THREE.Mesh(new THREE.RingGeometry(data.size + 5, data.size + 18, 64), new THREE.MeshBasicMaterial({ color: 0x888888, side: THREE.DoubleSide, transparent: true, opacity: 0.5 }));
+                const ring = new THREE.Mesh(
+                    new THREE.RingGeometry(data.size + 5, data.size + 18, 64), 
+                    new THREE.MeshBasicMaterial({ color: 0x888888, side: THREE.DoubleSide, transparent: true, opacity: 0.4 })
+                );
                 ring.rotation.x = Math.PI/2;
                 mesh.add(ring);
             }
 
-            // المتجهات (V و ΔV)
-            const vArrow = new THREE.ArrowHelper(new THREE.Vector3(), new THREE.Vector3(), data.size * 6, 0x00ff88, data.size, data.size/2);
-            const dvArrow = new THREE.ArrowHelper(new THREE.Vector3(), new THREE.Vector3(), data.size * 6, 0xff3333, data.size, data.size/2);
+            const vArrow = new THREE.ArrowHelper(new THREE.Vector3(), new THREE.Vector3(), 50, 0x00ff88, 12, 6);
+            const dvArrow = new THREE.ArrowHelper(new THREE.Vector3(), new THREE.Vector3(), 50, 0xff3333, 12, 6);
             scene.add(vArrow, dvArrow);
 
-            // ملصق اسم الكوكب
             const el = document.createElement('div');
             el.className = 'label planet-label';
             el.innerText = data.name;
@@ -132,17 +187,14 @@
             const planetObj = { ...data, mesh, vArrow, dvArrow, label: el, angle: Math.random() * Math.PI * 2 };
             planets.push(planetObj);
 
-            // إنشاء نقاط M0-M7 للأرض فقط
             if (data.isFocus) {
                 for (let i = 0; i < 8; i++) {
                     const angleM = i * (Math.PI / 4);
                     const xM = data.dist * Math.cos(angleM);
                     const zM = data.dist * Math.sin(angleM);
-                    
                     const dot = new THREE.Mesh(new THREE.SphereGeometry(2, 8, 8), new THREE.MeshBasicMaterial({color: 0xffffff}));
                     dot.position.set(xM, 0, zM);
                     scene.add(dot);
-
                     const mEl = document.createElement('div');
                     mEl.className = 'label m-point-label';
                     mEl.innerText = `M${i}`;
@@ -156,7 +208,7 @@
             btn.innerText = data.name;
             btn.onclick = () => {
                 controls.target.copy(mesh.position);
-                camera.position.set(mesh.position.x + 200, 150, mesh.position.z + 200);
+                camera.position.set(mesh.position.x + 300, 200, mesh.position.z + 300);
             };
             selector.appendChild(btn);
         });
@@ -171,20 +223,21 @@
 
             let x = p.dist * Math.cos(p.angle);
             let z = p.dist * Math.sin(p.angle);
+            
             p.mesh.position.set(x, 0, z);
+            p.mesh.scale.set(globalSizeMultiplier, globalSizeMultiplier, globalSizeMultiplier);
 
             p.vArrow.position.set(x, 0, z);
             p.vArrow.setDirection(new THREE.Vector3(-Math.sin(p.angle), 0, Math.cos(p.angle)));
+            
             p.dvArrow.position.set(x, 0, z);
             p.dvArrow.setDirection(new THREE.Vector3(-Math.cos(p.angle), 0, -Math.sin(p.angle)));
 
             updateLabel(p.label, p.mesh.position);
             
-            // تحديث إضاءة M0-M7 للأرض بناءً على قربها منها
             if (p.isFocus) {
                 let currentPosAngle = p.angle % (Math.PI * 2);
                 if (currentPosAngle < 0) currentPosAngle += Math.PI * 2;
-                
                 earthPoints.forEach(m => {
                     updateLabel(m.el, m.pos);
                     let diff = Math.min(Math.abs(currentPosAngle - m.targetAngle), Math.PI*2 - Math.abs(currentPosAngle - m.targetAngle));
@@ -193,6 +246,8 @@
                 });
             }
         });
+
+        axisLabels.forEach(axis => updateLabel(axis.el, axis.pos));
 
         renderer.render(scene, camera);
     }
@@ -214,11 +269,14 @@
         this.className = isRotating ? "stop" : "";
     };
 
-    const slider = document.getElementById('speedSlider');
-    const speedText = document.getElementById('speedVal');
-    slider.oninput = function() {
+    document.getElementById('speedSlider').oninput = function() {
         globalSpeedMultiplier = parseFloat(this.value);
-        speedText.innerText = globalSpeedMultiplier + "x";
+        document.getElementById('speedVal').innerText = globalSpeedMultiplier + "x";
+    };
+
+    document.getElementById('sizeSlider').oninput = function() {
+        globalSizeMultiplier = parseFloat(this.value);
+        document.getElementById('sizeVal').innerText = globalSizeMultiplier + "x";
     };
 
     window.onresize = () => {
