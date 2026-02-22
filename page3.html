@@ -7,11 +7,35 @@
     <script src="tailwind.js"></script>
     <style>
         body {
-            background-color: #1a1a1a;
+            background-color: #050508;
             color: #ffffff;
             overflow: hidden;
             font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            background: radial-gradient(circle at center, #1e1e2f 0%, #0a0a0c 100%);
+            background: radial-gradient(circle at center, #1a1a2e 0%, #050508 100%);
+        }
+
+        /* Animated Stars Background */
+        .stars-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .star {
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+            opacity: 0.5;
+            animation: twinkle var(--duration) infinite ease-in-out;
+        }
+
+        @keyframes twinkle {
+            0%, 100% { opacity: 0.3; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.2); }
         }
 
         /* Simulation Container */
@@ -23,16 +47,17 @@
             justify-content: center;
             align-items: center;
             perspective: 1500px;
-            margin-top: -50px; /* Dragging the solar system a little bit on the top */
+            margin-top: -50px;
+            z-index: 1;
         }
 
-        /* The Sun */
+        /* The Sun - Enhanced with stronger glow */
         .sun {
             width: 100px;
             height: 100px;
             background: radial-gradient(circle, #fff700, #ff8c00, #ff4500);
             border-radius: 50%;
-            box-shadow: 0 0 80px rgba(255, 140, 0, 0.8), 0 0 150px rgba(255, 69, 0, 0.4);
+            box-shadow: 0 0 60px #ff8c00, 0 0 120px #ff4500, 0 0 200px rgba(255, 69, 0, 0.3);
             z-index: 50;
             display: flex;
             justify-content: center;
@@ -41,16 +66,27 @@
             font-size: 1.2rem;
             color: #fff;
             text-shadow: 0 0 10px rgba(0,0,0,0.5);
+            animation: sunPulse 4s infinite ease-in-out;
+        }
+
+        @keyframes sunPulse {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 60px #ff8c00, 0 0 120px #ff4500; }
+            50% { transform: scale(1.05); box-shadow: 0 0 80px #ff8c00, 0 0 150px #ff4500; }
         }
 
         /* Orbit Base Style */
         .orbit {
             position: absolute;
-            border: 1px solid rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 50%;
             display: flex;
             justify-content: center;
             align-items: center;
+            transition: border-color 0.3s ease;
+        }
+
+        .orbit:hover {
+            border-color: rgba(255, 255, 255, 0.3);
         }
 
         /* Planet Base Style */
@@ -68,6 +104,13 @@
             flex-direction: column;
             align-items: center;
             transform: translateY(-50%);
+            cursor: pointer;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .planet:hover {
+            transform: translateY(-50%) scale(1.5);
+            z-index: 100;
         }
 
         .planet-label {
@@ -77,38 +120,27 @@
             font-size: 1.1rem;
             font-weight: 600;
             color: #fff;
-            text-shadow: 0 2px 5px rgba(0,0,0,0.8);
+            text-shadow: 0 2px 10px rgba(0,0,0,1);
+            opacity: 0.8;
+            transition: opacity 0.3s;
         }
 
-        /* Mercury */
+        .planet:hover .planet-label {
+            opacity: 1;
+        }
+
+        /* Planets specific styling */
         .mercury-orbit { width: 220px; height: 220px; }
-        .mercury-container { animation-duration: 4s; }
-        .mercury { 
-            width: 18px; height: 18px; 
-            background: #b1b1b1; 
-            top: 0; left: 50%;
-            box-shadow: 0 0 15px #b1b1b1;
-        }
+        .mercury-container { animation-duration: 6s; }
+        .mercury { width: 18px; height: 18px; background: #b1b1b1; top: 0; left: 50%; box-shadow: inset -4px -4px 6px rgba(0,0,0,0.5), 0 0 10px #b1b1b1; }
 
-        /* Venus */
         .venus-orbit { width: 340px; height: 340px; }
-        .venus-container { animation-duration: 7s; }
-        .venus { 
-            width: 28px; height: 28px; 
-            background: #e3bb76; 
-            top: 0; left: 50%;
-            box-shadow: 0 0 20px #e3bb76;
-        }
+        .venus-container { animation-duration: 10s; }
+        .venus { width: 28px; height: 28px; background: #e3bb76; top: 0; left: 50%; box-shadow: inset -6px -6px 8px rgba(0,0,0,0.5), 0 0 15px #e3bb76; }
 
-        /* Earth */
         .earth-orbit { width: 500px; height: 500px; }
-        .earth-container { animation-duration: 12s; }
-        .earth { 
-            width: 32px; height: 32px; 
-            background: #2271b3; 
-            top: 0; left: 50%;
-            box-shadow: 0 0 25px #2271b3;
-        }
+        .earth-container { animation-duration: 16s; }
+        .earth { width: 32px; height: 32px; background: #2271b3; top: 0; left: 50%; box-shadow: inset -8px -8px 10px rgba(0,0,0,0.5), 0 0 20px #2271b3; }
 
         @keyframes rotate {
             from { transform: rotate(0deg); }
@@ -122,7 +154,7 @@
             padding: 18px 45px;
             border-radius: 50px;
             background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(15px);
             color: white;
             transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             cursor: pointer;
@@ -137,15 +169,16 @@
         }
 
         .nav-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: rgba(255, 255, 255, 0.3);
-            transform: translateY(-8px);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            transform: translateY(-8px) scale(1.05);
+            box-shadow: 0 15px 30px rgba(0,0,0,0.4);
         }
 
         .btn-next { right: 60px; border-right: 6px solid #4facfe; }
         .btn-back { left: 60px; border-left: 6px solid #ff8c00; }
 
-        /* Layout - Swapped Sides */
+        /* Layout Grid */
         .layout-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -155,43 +188,40 @@
         }
 
         .content-section {
-            padding: 60px;
-            text-align: right; /* Text on the left but still right-aligned RTL */
+            padding: 40px 60px;
+            text-align: right;
             z-index: 10;
         }
 
         p {
-            font-size: 1.8rem; /* Smaller text size for a better fit */
-            line-height: 1.6;
+            font-size: 1.6rem; /* Slightly smaller font size */
+            line-height: 1.7;
             color: #ffffff;
-            max-width: 850px;
+            max-width: 950px; 
             font-weight: 400;
-            text-shadow: 0 4px 15px rgba(0,0,0,0.6);
-        }
-
-        @media (max-width: 1440px) {
-            p { font-size: 1.6rem; }
+            text-shadow: 0 4px 15px rgba(0,0,0,0.8);
+            /* Removed border-right and padding-right */
         }
 
         @media (max-width: 1024px) {
             .layout-grid { grid-template-columns: 1fr; }
-            .simulation-container { height: 50vh; order: 1; margin-top: 0; }
+            .simulation-container { height: 50vh; order: 1; margin-top: 50px; }
             .content-section { order: 2; text-align: center; padding: 20px; }
-            p { font-size: 1.4rem; }
+            p { font-size: 1.3rem; border-top: 2px solid rgba(255, 255, 255, 0.1); padding-top: 20px; }
         }
     </style>
 </head>
 <body>
 
+    <div class="stars-container" id="stars"></div>
+
     <div class="layout-grid">
-        <!-- Right Side: Content (Moved to left in visual order due to RTL/Grid swapping) -->
         <div class="content-section">
             <p>
                 من بينهم المركزي الشمسي، وهو إطار مرجعي عطّالي يُتخذ مركزه عند الشمس، ويُعتبر ساكنًا تقريبًا بالنسبة لحركة الكواكب في النظام الشمسي. في هذا المعلم، تتحرك الكواكب والأجرام السماوية الأخرى في مداراتها وفق قوانين نيوتن للحركة والجاذبية، ويمكن تحليل حركتها بشكل مباشر دون الحاجة لأخذ تأثيرات حركة الأرض أو الأجرام الأخرى في الاعتبار. يُستخدم هذا الإطار في دراسة المدارات، حركة الكواكب، وحساب السرعات والمسافات بين الأجرام السماوية بدقة، لأنه يُبسط المعادلات ويجعل الشمس تقريبًا في مركز النظام المرجعي.
             </p>
         </div>
 
-        <!-- Left Side: Simulation (Moved to right in visual order) -->
         <div class="simulation-container">
             <div class="sun">الشمس</div>
 
@@ -235,5 +265,23 @@
         <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path d="M5 12h14m-7-7 7 7-7 7"/></svg>
     </a>
 
+    <script>
+        // Generate stars
+        const starsContainer = document.getElementById('stars');
+        const starCount = 150;
+
+        for (let i = 0; i < starCount; i++) {
+            const star = document.createElement('div');
+            star.className = 'star';
+            const size = Math.random() * 3;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            star.style.left = `${Math.random() * 100}%`;
+            star.style.top = `${Math.random() * 100}%`;
+            star.style.setProperty('--duration', `${2 + Math.random() * 4}s`);
+            star.style.opacity = Math.random();
+            starsContainer.appendChild(star);
+        }
+    </script>
 </body>
 </html>
