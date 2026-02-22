@@ -1,15 +1,164 @@
 <!DOCTYPE html>
-
+<html lang="ar" dir="rtl">
 <head>
-    <html lang="ar">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>البداية</title>
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --accent-color: #ffffff;
+            --hover-glow: rgba(255, 255, 255, 0.3);
+            --transition-speed: 0.6s;
+        }
 
-    <title>main</title>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--accent-color);
+        }
+
+        /* Ambient background effect */
+        .ambient-light {
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, rgba(0,0,0,0) 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .container {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeIn 1.2s ease-out forwards;
+        }
+
+        .start-btn {
+            background: transparent;
+            color: var(--accent-color);
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            padding: 1.2rem 3.5rem;
+            font-size: 1.8rem;
+            font-weight: 300;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border-radius: 50px;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .start-btn:hover {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 25px var(--hover-glow);
+            transform: scale(1.05);
+            letter-spacing: 4px;
+        }
+
+        /* Button ripple effect */
+        .start-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .start-btn:active::after {
+            width: 300px;
+            height: 300px;
+            opacity: 0;
+        }
+
+        /* Page Fade-out transition */
+        .fade-out {
+            animation: fadeOut var(--transition-speed) ease-in forwards;
+        }
+
+        @keyframes fadeIn {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            from { opacity: 1; transform: scale(1); filter: blur(0); }
+            to { opacity: 0; transform: scale(1.1); filter: blur(10px); }
+        }
+
+        /* Mouse follow effect logic */
+        #cursor-glow {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(255,255,255,0.03) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+    </style>
 </head>
-
 <body>
-    <p>اضغط على الرابط التالي لبدء المشروع</p>
 
+    <div id="cursor-glow"></div>
+    <div class="ambient-light"></div>
 
-    <a href="everyplanet.html" target=_self title="click to start">
-        Click here to start the project
-    </a>
+    <div class="container">
+        <a href="everyplanet.html" class="start-btn" id="mainLink">إبدأ</a>
+    </div>
+
+    <script>
+        // Track mouse for subtle glow effect
+        document.addEventListener('mousemove', e => {
+            const glow = document.getElementById('cursor-glow');
+            glow.style.setProperty('--x', e.clientX + 'px');
+            glow.style.setProperty('--y', e.clientY + 'px');
+        });
+
+        // Smooth transition on click
+        const link = document.getElementById('mainLink');
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const destination = this.href;
+
+            document.body.classList.add('fade-out');
+            
+            setTimeout(() => {
+                window.location.href = destination;
+            }, 550); // Matches CSS transition speed
+        });
+
+        // Handle case where user hits back button
+        window.onpageshow = function(event) {
+            if (event.persisted) {
+                document.body.classList.remove('fade-out');
+            }
+        };
+    </script>
+</body>
+</html>
